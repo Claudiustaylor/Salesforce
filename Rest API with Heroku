@@ -1,0 +1,15 @@
+The wrapper libraries handle low-level tasks such as authentication and request and response handling. So instead of manually constructing HTTP requests like (with Node.js as an example):
+
+
+
+var query = 'SELECT name Account'; var url = 'https://na1.salesforce.com/services/data/v20.0/query/?q=' + encodeURIComponent(query); request.get(url, { 'auth': { 'bearer': 'bearerToken' } }); 
+
+
+
+
+
+
+You can use the open-source nforce library for Node.js and simply do:
+
+
+org.query({ query: 'SELECT name FROM Account' }); 
