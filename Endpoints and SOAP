@@ -1,0 +1,64 @@
+--Each time a contact is created, the Heroku app receives the contact details and can do whatever it needs to with the data.
+
+
+
+app.post("/new_contact", function(req, res) {
+    var notification = req.body["soapenv:envelope"]["soapenv:body"][0]["notifications"][0];
+    var sessionId = notification["sessionid"][0];
+    var data = {};
+    if (notification["notification"] !== undefined) {
+      var sobject = notification["notification"][0]["sobject"][0];
+      Object.keys(sobject).forEach(function(key) {
+        if (key.indexOf("sf:") == 0) {
+          var newKey = key.substr(3);
+          data[newKey] = sobject[key][0];
+        }
+      }); // do something #awesome with the data and sessionId
+    }
+    res.status(201).end();
+  }); 
+  
+  
+  
+  
+  
+  --Apex trigger that calls a Heroku app
+  
+   trigger NewContactWebhookTrigger on Contact (after insert) {
+  String url = 'https://foo.herokuapp.com/new_contact';
+  String content = Webhook.jsonContent(Trigger.new, Trigger.old);
+  Webhook.callout(url, content);
+} 
+
+
+
+
+
+
+The referenced Webhook Apex class is:
+
+
+ public class Webhook {
+  public static String jsonContent(List<Object> triggerNew, List<Object> triggerOld) {
+    String newObjects = '[]';
+    if (triggerNew != null) {
+      newObjects = JSON.serialize(triggerNew);
+    }
+    String oldObjects = '[]';
+    if (triggerOld != null) {
+      oldObjects = JSON.serialize(triggerOld);
+    }
+    String userId = JSON.serialize(UserInfo.getUserId());
+    String content = '{"new": ' + newObjects + ', "old": ' + oldObjects + ', "userId": ' + userId + '}';
+    return content;
+  }
+  @future(callout=true) public static void callout(String url, String content) {
+    Http h = new Http();
+    HttpRequest req = new HttpRequest();
+    req.setEndpoint(url);
+    req.setMethod('POST');
+    req.setHeader('Content-Type', 'application/json');
+    req.setBody(content);
+    h.send(req);
+  }
+} 
